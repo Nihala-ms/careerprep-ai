@@ -7,8 +7,7 @@ import React, {
 const TOTAL_QUESTIONS = 25;
 
 const API_URL =
-  "http://localhost:3000/api/ai";
-
+  "https://careerprep-ai-server-ibns1j0qz-nihala-ms-projects.vercel.app/api/ai";
 const Interview = ({
   interviewData = {},
 }) => {
