@@ -1,42 +1,21 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const TOTAL_QUESTIONS = 25;
 
 const API_URL =
   "https://careerprep-ai-server-ibns1j0qz-nihala-ms-projects.vercel.app/api/ai";
-const Interview = ({
-  interviewData = {},
-}) => {
-  const [questions, setQuestions] =
-    useState([]);
 
-  const [currentQuestion, setCurrentQuestion] =
-    useState(0);
+const Interview = ({ interviewData = {} }) => {
+  const [questions, setQuestions] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
 
-  const [answer, setAnswer] =
-    useState("");
-
-  const [answers, setAnswers] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [isEvaluating, setIsEvaluating] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [result, setResult] =
-    useState(null);
-
-  const hasGeneratedQuestions =
-    useRef(false);
+  const hasGeneratedQuestions = useRef(false);
 
   // ==========================================================
   // GENERATE QUESTIONS
@@ -48,79 +27,48 @@ const Interview = ({
       setError("");
       setResult(null);
 
-      const response = await fetch(
-        `${API_URL}/questions`,
-        {
-          method: "POST",
+      const response = await fetch(`${API_URL}/questions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: interviewData?.role || "React Developer",
+          experience: interviewData?.experience || "Fresher",
+          difficulty:
+            interviewData?.difficulty ||
+            interviewData?.level ||
+            "Beginner",
+          count: TOTAL_QUESTIONS,
+        }),
+      });
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            role:
-              interviewData?.role ||
-              "React Developer",
-
-            experience:
-              interviewData?.experience ||
-              "Fresher",
-
-            difficulty:
-              interviewData?.difficulty ||
-              interviewData?.level ||
-              "Beginner",
-
-            count:
-              TOTAL_QUESTIONS,
-          }),
-        }
-      );
-
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data?.message ||
-            "Failed to generate questions."
+          data?.message || "Failed to generate questions."
         );
       }
 
-      if (
-        !Array.isArray(
-          data?.questions
-        )
-      ) {
+      if (!Array.isArray(data?.questions)) {
         throw new Error(
           "No questions were returned from the server."
         );
       }
 
-      if (
-        data.questions.length !==
-        TOTAL_QUESTIONS
-      ) {
+      if (data.questions.length !== TOTAL_QUESTIONS) {
         throw new Error(
           `The server returned ${data.questions.length} questions instead of ${TOTAL_QUESTIONS}.`
         );
       }
 
-      setQuestions(
-        data.questions
-      );
-
+      setQuestions(data.questions);
       setAnswers([]);
-
       setCurrentQuestion(0);
-
       setAnswer("");
     } catch (err) {
-      console.error(
-        "Question generation error:",
-        err
-      );
+      console.error("Question generation error:", err);
 
       setError(
         err?.message ||
@@ -136,120 +84,59 @@ const Interview = ({
   // ==========================================================
 
   useEffect(() => {
-    if (
-      hasGeneratedQuestions.current
-    ) {
+    if (hasGeneratedQuestions.current) {
       return;
     }
 
-    hasGeneratedQuestions.current =
-      true;
+    hasGeneratedQuestions.current = true;
 
     generateQuestions();
   }, []);
 
   // ==========================================================
-  // FINISH INTERVIEW
+  // FINAL EVALUATION
   // ==========================================================
 
-  const finishInterview = async (
-    finalAnswers
-  ) => {
+  const finishInterview = async (finalAnswers) => {
     try {
       setIsEvaluating(true);
       setError("");
 
-      // ------------------------------------------------------
-      // CLEAN QUESTIONS
-      // ------------------------------------------------------
+      const cleanQuestions = questions.map(
+        (question, index) => ({
+          id: index + 1,
+          question:
+            typeof question === "object"
+              ? question?.question || ""
+              : String(question),
+          category:
+            typeof question === "object"
+              ? question?.category || "General"
+              : "General",
+        })
+      );
 
-      const cleanQuestions =
-        questions.map(
-          (question, index) => ({
-            id: index + 1,
-
-            question:
-              typeof question ===
-              "object"
-                ? question?.question ||
-                  ""
-                : String(question),
-
-            category:
-              typeof question ===
-              "object"
-                ? question?.category ||
-                  "General"
-                : "General",
-          })
-        );
-
-      // ------------------------------------------------------
-      // CLEAN ANSWERS
-      // ------------------------------------------------------
-
-      const cleanAnswers =
-        cleanQuestions.map(
-          (question, index) => ({
-            question:
-              question.question,
-
-            answer:
-              typeof finalAnswers[
-                index
-              ] === "string"
-                ? finalAnswers[index]
-                : finalAnswers[index]
-                    ?.answer || "",
-          })
-        );
-
-      console.log(
-        "========== FINAL INTERVIEW =========="
+      const cleanAnswers = cleanQuestions.map(
+        (question, index) => ({
+          question: question.question,
+          answer:
+            typeof finalAnswers[index] === "string"
+              ? finalAnswers[index]
+              : finalAnswers[index]?.answer || "",
+        })
       );
 
       console.log(
-        "Questions:",
-        cleanQuestions.length
+        "Sending final evaluation request..."
       );
-
-      console.log(
-        "Answers:",
-        cleanAnswers.length
-      );
-
-      cleanAnswers.forEach(
-        (item, index) => {
-          console.log(
-            `Q${index + 1}:`,
-            item.question
-          );
-
-          console.log(
-            `A${index + 1}:`,
-            item.answer
-          );
-        }
-      );
-
-      console.log(
-        "======================================"
-      );
-
-      // ------------------------------------------------------
-      // SEND FINAL EVALUATION
-      // ------------------------------------------------------
 
       const response = await fetch(
         `${API_URL}/final-evaluation`,
         {
           method: "POST",
-
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             role:
               interviewData?.role ||
@@ -264,17 +151,13 @@ const Interview = ({
               interviewData?.level ||
               "Beginner",
 
-            questions:
-              cleanQuestions,
-
-            answers:
-              cleanAnswers,
+            questions: cleanQuestions,
+            answers: cleanAnswers,
           }),
         }
       );
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
       console.log(
         "Final evaluation response:",
@@ -284,14 +167,11 @@ const Interview = ({
       if (!response.ok) {
         throw new Error(
           data?.message ||
-            "No evaluation was returned from the server."
+            "Failed to evaluate interview."
         );
       }
 
-      if (
-        !data ||
-        data.success === false
-      ) {
+      if (!data || data.success === false) {
         throw new Error(
           data?.message ||
             "No evaluation was returned from the server."
@@ -315,26 +195,19 @@ const Interview = ({
   };
 
   // ==========================================================
-  // NEXT
+  // NEXT QUESTION
   // ==========================================================
 
   const handleNext = async () => {
-    const currentAnswer =
-      answer.trim();
+    const currentAnswer = answer.trim();
 
-    const updatedAnswers = [
-      ...answers,
-    ];
+    const updatedAnswers = [...answers];
 
-    updatedAnswers[
-      currentQuestion
-    ] = currentAnswer;
+    updatedAnswers[currentQuestion] =
+      currentAnswer;
 
-    setAnswers(
-      updatedAnswers
-    );
+    setAnswers(updatedAnswers);
 
-    // Last question
     if (
       currentQuestion ===
       questions.length - 1
@@ -346,7 +219,6 @@ const Interview = ({
       return;
     }
 
-    // Next question
     setCurrentQuestion(
       (prev) => prev + 1
     );
@@ -359,7 +231,7 @@ const Interview = ({
   };
 
   // ==========================================================
-  // PREVIOUS
+  // PREVIOUS QUESTION
   // ==========================================================
 
   const handlePrevious = () => {
@@ -384,13 +256,9 @@ const Interview = ({
 
   const handleRetry = () => {
     setResult(null);
-
     setError("");
-
     setAnswers([]);
-
     setAnswer("");
-
     setCurrentQuestion(0);
 
     generateQuestions();
@@ -411,9 +279,7 @@ const Interview = ({
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07100d] text-white px-6">
-
         <div className="text-center">
-
           <div className="text-5xl mb-5">
             🤖
           </div>
@@ -425,9 +291,7 @@ const Interview = ({
           <p className="text-gray-400">
             Generating 25 interview questions...
           </p>
-
         </div>
-
       </div>
     );
   }
@@ -439,9 +303,7 @@ const Interview = ({
   if (isEvaluating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07100d] text-white px-6">
-
         <div className="text-center">
-
           <div className="text-5xl mb-5">
             🧠
           </div>
@@ -453,9 +315,7 @@ const Interview = ({
           <p className="text-gray-400">
             AI is reviewing your 25 answers...
           </p>
-
         </div>
-
       </div>
     );
   }
@@ -467,9 +327,7 @@ const Interview = ({
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07100d] text-white px-6">
-
         <div className="max-w-xl w-full bg-[#10151e] border border-red-500/30 rounded-2xl p-8 text-center">
-
           <div className="text-4xl mb-4">
             ⚠️
           </div>
@@ -483,29 +341,21 @@ const Interview = ({
           </p>
 
           <div className="flex justify-center gap-3">
-
             <button
-              onClick={
-                handleRetry
-              }
+              onClick={handleRetry}
               className="px-5 py-3 rounded-lg bg-emerald-300 text-[#07100d] font-semibold hover:bg-emerald-200 transition"
             >
               Try Again
             </button>
 
             <button
-              onClick={
-                handleBackToHome
-              }
+              onClick={handleBackToHome}
               className="px-5 py-3 rounded-lg border border-gray-700 text-white hover:border-emerald-300 hover:text-emerald-300 transition"
             >
               Back to Home
             </button>
-
           </div>
-
         </div>
-
       </div>
     );
   }
@@ -516,46 +366,33 @@ const Interview = ({
 
   if (result) {
     const overallScore =
-      Number(
-        result?.overallScore
-      ) || 0;
+      Number(result?.overallScore) || 0;
 
     const percentage =
-      Number(
-        result?.percentage
-      ) || 0;
+      Number(result?.percentage) || 0;
 
     const correct =
-      Number(
-        result?.correctAnswers
-      ) || 0;
+      Number(result?.correctAnswers) || 0;
 
     const partial =
-      Number(
-        result?.partiallyCorrect
-      ) || 0;
+      Number(result?.partiallyCorrect) || 0;
 
     const incorrect =
-      Number(
-        result?.incorrectAnswers
-      ) || 0;
+      Number(result?.incorrectAnswers) || 0;
 
-    const reviews =
-      Array.isArray(
-        result?.questionResults
-      )
-        ? result.questionResults
-        : [];
+    const reviews = Array.isArray(
+      result?.questionResults
+    )
+      ? result.questionResults
+      : [];
 
     return (
       <div className="min-h-screen bg-[#07100d] text-white px-4 py-8">
-
         <div className="max-w-6xl mx-auto">
 
           {/* HEADER */}
 
           <div className="text-center mb-8">
-
             <p className="text-xs font-semibold tracking-[0.2em] text-emerald-300 mb-3">
               CAREERPREP AI
             </p>
@@ -571,14 +408,11 @@ const Interview = ({
               {interviewData?.experience ||
                 "Fresher"}
             </p>
-
           </div>
-
 
           {/* SCORE */}
 
           <div className="bg-[#10151e] border border-gray-800 rounded-2xl p-8 text-center mb-6">
-
             <p className="text-gray-400 mb-2">
               Overall Score
             </p>
@@ -595,18 +429,13 @@ const Interview = ({
             <p className="text-gray-400 mt-2">
               {percentage}%
             </p>
-
           </div>
-
 
           {/* SCORE BREAKDOWN */}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
-            {/* Correct */}
-
             <div className="bg-[#10151e] border border-gray-800 rounded-xl p-5 text-center">
-
               <div className="text-3xl font-bold text-emerald-300">
                 {correct}
               </div>
@@ -618,14 +447,9 @@ const Interview = ({
               <p className="text-xs text-gray-500 mt-1">
                 {correct} marks
               </p>
-
             </div>
 
-
-            {/* Partial */}
-
             <div className="bg-[#10151e] border border-gray-800 rounded-xl p-5 text-center">
-
               <div className="text-3xl font-bold text-yellow-300">
                 {partial}
               </div>
@@ -637,14 +461,9 @@ const Interview = ({
               <p className="text-xs text-gray-500 mt-1">
                 {partial * 0.5} marks
               </p>
-
             </div>
 
-
-            {/* Incorrect */}
-
             <div className="bg-[#10151e] border border-gray-800 rounded-xl p-5 text-center">
-
               <div className="text-3xl font-bold text-red-400">
                 {incorrect}
               </div>
@@ -656,16 +475,12 @@ const Interview = ({
               <p className="text-xs text-gray-500 mt-1">
                 0 marks
               </p>
-
             </div>
-
           </div>
-
 
           {/* OVERALL FEEDBACK */}
 
           <div className="bg-[#10151e] border border-gray-800 rounded-2xl p-6 mb-6">
-
             <h2 className="text-xl font-bold mb-3">
               Overall Feedback
             </h2>
@@ -675,25 +490,20 @@ const Interview = ({
                 result?.summary ||
                 "Interview completed."}
             </p>
-
           </div>
-
 
           {/* STRENGTHS */}
 
           {Array.isArray(
             result?.strengths
           ) &&
-            result.strengths.length >
-              0 && (
+            result.strengths.length > 0 && (
               <div className="bg-[#10151e] border border-gray-800 rounded-2xl p-6 mb-6">
-
                 <h2 className="text-xl font-bold mb-4">
                   Strengths
                 </h2>
 
                 <ul className="space-y-2">
-
                   {result.strengths.map(
                     (item, index) => (
                       <li
@@ -708,28 +518,23 @@ const Interview = ({
                       </li>
                     )
                   )}
-
                 </ul>
-
               </div>
             )}
-
 
           {/* IMPROVEMENTS */}
 
           {Array.isArray(
             result?.improvements
           ) &&
-            result.improvements
-              .length > 0 && (
+            result.improvements.length >
+              0 && (
               <div className="bg-[#10151e] border border-gray-800 rounded-2xl p-6 mb-6">
-
                 <h2 className="text-xl font-bold mb-4">
                   Areas to Improve
                 </h2>
 
                 <ul className="space-y-2">
-
                   {result.improvements.map(
                     (item, index) => (
                       <li
@@ -744,23 +549,18 @@ const Interview = ({
                       </li>
                     )
                   )}
-
                 </ul>
-
               </div>
             )}
-
 
           {/* QUESTION REVIEW */}
 
           <div className="mb-8">
-
             <h2 className="text-2xl font-bold mb-5">
               Question Review
             </h2>
 
             <div className="space-y-5">
-
               {reviews.map(
                 (item, index) => (
                   <div
@@ -771,10 +571,9 @@ const Interview = ({
                     className="bg-[#10151e] border border-gray-800 rounded-2xl p-6"
                   >
 
-                    {/* Question Header */}
+                    {/* QUESTION NUMBER */}
 
                     <div className="flex justify-between gap-4 mb-4">
-
                       <h3 className="font-semibold text-white">
                         Question{" "}
                         {item?.questionNumber ||
@@ -784,21 +583,17 @@ const Interview = ({
                       <span className="text-emerald-300 font-bold">
                         {item?.score ?? 0}/1
                       </span>
-
                     </div>
 
-
-                    {/* Question */}
+                    {/* QUESTION */}
 
                     <p className="text-gray-200 mb-4">
                       {item?.question}
                     </p>
 
-
-                    {/* Your Answer */}
+                    {/* YOUR ANSWER */}
 
                     <div className="bg-[#171d27] rounded-lg p-4 mb-4">
-
                       <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">
                         Your Answer
                       </p>
@@ -807,38 +602,30 @@ const Interview = ({
                         {item?.candidateAnswer ||
                           "No answer provided"}
                       </p>
-
                     </div>
 
-
-                    {/* Status */}
+                    {/* STATUS */}
 
                     <p className="text-gray-300 mb-4">
-
                       <span className="font-semibold text-white">
                         Status:
                       </span>{" "}
-
                       <span className="text-emerald-300">
                         {item?.status ||
                           "Not evaluated"}
                       </span>
-
                     </p>
 
-
-                    {/* Feedback */}
+                    {/* FEEDBACK */}
 
                     <p className="text-gray-400 mb-4 leading-7">
                       {item?.feedback}
                     </p>
 
-
-                    {/* Better Answer */}
+                    {/* BETTER ANSWER */}
 
                     {item?.betterAnswer && (
                       <div className="bg-emerald-300/5 border border-emerald-300/20 rounded-lg p-4">
-
                         <p className="text-xs text-emerald-300 mb-2 uppercase tracking-wider">
                           Better Answer
                         </p>
@@ -846,47 +633,37 @@ const Interview = ({
                         <p className="text-gray-300 leading-7">
                           {item.betterAnswer}
                         </p>
-
                       </div>
                     )}
-
                   </div>
                 )
               )}
-
             </div>
           </div>
-
 
           {/* BUTTONS */}
 
           <div className="flex flex-col sm:flex-row justify-center gap-4 pb-10">
 
             <button
-              onClick={
-                handleRetry
-              }
+              onClick={handleRetry}
               className="px-6 py-3 rounded-lg bg-emerald-300 text-[#07100d] font-semibold hover:bg-emerald-200 transition"
             >
               Try Again
             </button>
 
             <button
-              onClick={
-                handleBackToHome
-              }
+              onClick={handleBackToHome}
               className="px-6 py-3 rounded-lg border border-gray-700 text-white hover:border-emerald-300 hover:text-emerald-300 transition"
             >
               Back to Home
             </button>
 
           </div>
-
         </div>
       </div>
     );
   }
-
 
   // ==========================================================
   // NO QUESTIONS
@@ -895,7 +672,6 @@ const Interview = ({
   if (!questions.length) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#07100d] text-white px-6">
-
         <div className="text-center">
 
           <p className="mb-4 text-gray-400">
@@ -905,31 +681,24 @@ const Interview = ({
           <div className="flex justify-center gap-3">
 
             <button
-              onClick={
-                handleRetry
-              }
+              onClick={handleRetry}
               className="px-5 py-3 rounded-lg bg-emerald-300 text-[#07100d] font-semibold hover:bg-emerald-200 transition"
             >
               Try Again
             </button>
 
             <button
-              onClick={
-                handleBackToHome
-              }
+              onClick={handleBackToHome}
               className="px-5 py-3 rounded-lg border border-gray-700 text-white hover:border-emerald-300 hover:text-emerald-300 transition"
             >
               Back to Home
             </button>
 
           </div>
-
         </div>
-
       </div>
     );
   }
-
 
   // ==========================================================
   // CURRENT QUESTION
@@ -955,7 +724,6 @@ const Interview = ({
       TOTAL_QUESTIONS) *
     100;
 
-
   // ==========================================================
   // INTERVIEW SCREEN
   // ==========================================================
@@ -970,7 +738,6 @@ const Interview = ({
         <div className="flex justify-between items-center mb-6">
 
           <div>
-
             <p className="text-xs font-semibold tracking-[0.2em] text-emerald-300 mb-1">
               CAREERPREP AI
             </p>
@@ -983,12 +750,9 @@ const Interview = ({
               {interviewData?.role ||
                 "React Developer"}
             </p>
-
           </div>
 
-
           <div className="text-right">
-
             <p className="text-gray-500 text-sm">
               Question
             </p>
@@ -997,13 +761,11 @@ const Interview = ({
               {currentQuestion + 1}/
               {TOTAL_QUESTIONS}
             </p>
-
           </div>
 
         </div>
 
-
-        {/* PROGRESS */}
+        {/* PROGRESS BAR */}
 
         <div className="w-full bg-[#171d27] rounded-full h-2 mb-8">
 
@@ -1016,54 +778,43 @@ const Interview = ({
 
         </div>
 
-
         {/* QUESTION CARD */}
 
         <div className="bg-[#10151e] border border-gray-800 rounded-2xl p-6 md:p-8">
 
-          {/* Category */}
+          {/* CATEGORY */}
 
           <div className="mb-5">
 
             <span className="inline-block px-3 py-1 rounded-full bg-emerald-300/10 text-emerald-300 text-sm">
-              {category ||
-                "Technical"}
+              {category || "Technical"}
             </span>
 
           </div>
 
-
-          {/* Question */}
+          {/* QUESTION */}
 
           <h2 className="text-2xl font-bold leading-relaxed mb-8">
             {questionText}
           </h2>
 
-
-          {/* Answer */}
+          {/* ANSWER */}
 
           <textarea
             value={answer}
             onChange={(e) =>
-              setAnswer(
-                e.target.value
-              )
+              setAnswer(e.target.value)
             }
             placeholder="Type your answer here..."
             className="w-full min-h-[220px] bg-[#171d27] border border-gray-700 rounded-xl p-4 text-white placeholder-gray-500 outline-none focus:border-emerald-300 resize-none transition"
           />
 
-
-          {/* Buttons */}
+          {/* BUTTONS */}
 
           <div className="flex justify-between mt-6">
 
-            {/* Previous */}
-
             <button
-              onClick={
-                handlePrevious
-              }
+              onClick={handlePrevious}
               disabled={
                 currentQuestion === 0
               }
@@ -1072,13 +823,8 @@ const Interview = ({
               Previous
             </button>
 
-
-            {/* Next / Finish */}
-
             <button
-              onClick={
-                handleNext
-              }
+              onClick={handleNext}
               className="px-6 py-3 rounded-lg bg-emerald-300 text-[#07100d] font-semibold hover:bg-emerald-200 transition"
             >
               {currentQuestion ===
@@ -1090,7 +836,6 @@ const Interview = ({
           </div>
 
         </div>
-
       </div>
     </div>
   );
