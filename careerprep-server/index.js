@@ -6,27 +6,35 @@ import aiRoutes from "./routes/aiRoutes.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 /* =========================================================
-   MIDDLEWARE
+   CORS
 ========================================================= */
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
+  })
+);
+
+/* =========================================================
+   BODY PARSER
+========================================================= */
+
 app.use(express.json());
-
-/* =========================================================
-   AI ROUTES
-========================================================= */
-
-app.use("/api/ai", aiRoutes);
 
 /* =========================================================
    HOME ROUTE
 ========================================================= */
 
 app.get("/", (req, res) => {
-  res.json({
+  res.status(200).json({
+    success: true,
     message: "CareerPrep AI Server is running 🚀",
   });
 });
@@ -36,18 +44,46 @@ app.get("/", (req, res) => {
 ========================================================= */
 
 app.get("/api/health", (req, res) => {
-  res.json({
-    status: "success",
+  res.status(200).json({
+    success: true,
     message: "CareerPrep AI backend is connected!",
   });
 });
 
 /* =========================================================
-   START SERVER
+   AI ROUTES
 ========================================================= */
 
-app.listen(PORT, () => {
-  console.log(
-    `CareerPrep AI server running on port ${PORT}`
-  );
+app.use("/api/ai", aiRoutes);
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
+
+  res.status(500).json({
+    success: false,
+    message:
+      err?.message ||
+      "Internal server error",
+  });
 });
+
+/* =========================================================
+   LOCAL SERVER
+========================================================= */
+
+if (process.env.NODE_ENV !== "production") {
+  const PORT =
+    process.env.PORT || 3000;
+
+  app.listen(PORT, () => {
+    console.log(
+      `CareerPrep AI server running on port ${PORT}`
+    );
+  });
+}
+
+export default app;
