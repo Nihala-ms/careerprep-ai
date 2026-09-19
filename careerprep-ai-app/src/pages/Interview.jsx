@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 const TOTAL_QUESTIONS = 25;
 
 const API_URL =
-  "https://careerprep-ai-server-ibns1j0qz-nihala-ms-projects.vercel.app/api/ai";
+  "https://careerprep-ai-server-58epsvnag-nihala-ms-projects.vercel.app/api/ai";
 
 const Interview = ({ interviewData = {} }) => {
   const [questions, setQuestions] = useState([]);
