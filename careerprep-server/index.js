@@ -11,19 +11,55 @@ const app = express();
 // CORS
 // ======================================================
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://careerprep-ai-app.vercel.app",
+];
+
 const corsOptions = {
-  origin: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: function (origin, callback) {
+    // Allow requests with no origin
+    // Example: Postman
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log("Blocked CORS origin:", origin);
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
+
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
+
   credentials: false,
+
   optionsSuccessStatus: 204,
 };
 
-// CORS middleware
+// ======================================================
+// CORS MIDDLEWARE
+// ======================================================
+
 app.use(cors(corsOptions));
 
-// Explicit preflight handling
-app.options(/.*/, cors(corsOptions));
+// Explicit OPTIONS handling
+app.options("*", cors(corsOptions));
 
 // ======================================================
 // BODY PARSER
@@ -75,7 +111,8 @@ app.use((err, req, res, next) => {
 
   res.status(500).json({
     success: false,
-    message: err.message || "Internal server error",
+    message:
+      err.message || "Internal server error",
   });
 });
 
@@ -87,8 +124,14 @@ if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
 
   app.listen(PORT, () => {
-    console.log(`CareerPrep AI server running on port ${PORT}`);
+    console.log(
+      `CareerPrep AI server running on port ${PORT}`
+    );
   });
 }
+
+// ======================================================
+// EXPORT
+// ======================================================
 
 export default app;
