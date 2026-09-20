@@ -11,53 +11,28 @@ const app = express();
 // CORS
 // ======================================================
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://careerprep-ai-app.vercel.app",
-  "https://careerprep-ai-qq0vwho53-nihala-ms-projects.vercel.app",
-];
-
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests without an origin
-    // Example: Postman, server-to-server requests
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.log("Blocked CORS origin:", origin);
-    return callback(null, false);
-  },
-
+  origin: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-  ],
-
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: false,
-
   optionsSuccessStatus: 204,
 };
 
-// Apply CORS
+// CORS middleware
 app.use(cors(corsOptions));
 
-// Explicitly handle preflight requests
+// Explicit preflight handling
 app.options(/.*/, cors(corsOptions));
+
 // ======================================================
-// Body parser
+// BODY PARSER
 // ======================================================
 
 app.use(express.json());
 
 // ======================================================
-// Root route
+// HEALTH CHECK
 // ======================================================
 
 app.get("/", (req, res) => {
@@ -67,10 +42,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// ======================================================
-// Health check
-// ======================================================
-
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -79,13 +50,13 @@ app.get("/api/health", (req, res) => {
 });
 
 // ======================================================
-// AI routes
+// AI ROUTES
 // ======================================================
 
 app.use("/api/ai", aiRoutes);
 
 // ======================================================
-// 404 handler
+// 404 HANDLER
 // ======================================================
 
 app.use((req, res) => {
@@ -96,7 +67,7 @@ app.use((req, res) => {
 });
 
 // ======================================================
-// Error handler
+// ERROR HANDLER
 // ======================================================
 
 app.use((err, req, res, next) => {
@@ -109,7 +80,7 @@ app.use((err, req, res, next) => {
 });
 
 // ======================================================
-// Local development
+// LOCAL DEVELOPMENT
 // ======================================================
 
 if (process.env.NODE_ENV !== "production") {
@@ -119,9 +90,5 @@ if (process.env.NODE_ENV !== "production") {
     console.log(`CareerPrep AI server running on port ${PORT}`);
   });
 }
-
-// ======================================================
-// Vercel
-// ======================================================
 
 export default app;
