@@ -12,6 +12,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://careerprep-ai-app.vercel.app",
+      "https://careerprep-ai-qq0vwho53-nihala-ms-projects.vercel.app",
     ],
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
