@@ -7,20 +7,25 @@ dotenv.config();
 
 const app = express();
 
+// ======================================================
+// CORS
+// ======================================================
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://careerprep-ai-app.vercel.app",
-      "https://careerprep-ai-qq0vwho53-nihala-ms-projects.vercel.app",
-    ],
+    origin: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// ======================================================
+// Middleware
+// ======================================================
 app.use(express.json());
 
+// ======================================================
+// Root Route
+// ======================================================
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -28,6 +33,9 @@ app.get("/", (req, res) => {
   });
 });
 
+// ======================================================
+// Health Check
+// ======================================================
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -35,8 +43,14 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// ======================================================
+// AI Routes
+// ======================================================
 app.use("/api/ai", aiRoutes);
 
+// ======================================================
+// 404 Handler
+// ======================================================
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -44,6 +58,9 @@ app.use((req, res) => {
   });
 });
 
+// ======================================================
+// Error Handler
+// ======================================================
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
 
@@ -53,6 +70,9 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ======================================================
+// Local Development Server
+// ======================================================
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
 
@@ -61,4 +81,7 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
+// ======================================================
+// Vercel
+// ======================================================
 export default app;
