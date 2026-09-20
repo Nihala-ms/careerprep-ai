@@ -2,9 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 
 const TOTAL_QUESTIONS = 25;
 
-const API_URL =
-  "https://careerprep-ai-server-58epsvnag-nihala-ms-projects.vercel.app/api/ai";
-
+// NEW VERCEL BACKEND URL
+const API_URL = import.meta.env.VITE_API_URL;
 const Interview = ({ interviewData = {} }) => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -257,9 +256,13 @@ const Interview = ({ interviewData = {} }) => {
   const handleRetry = () => {
     setResult(null);
     setError("");
+    setQuestions([]);
     setAnswers([]);
     setAnswer("");
     setCurrentQuestion(0);
+
+    // Allow generateQuestions() to run again
+    hasGeneratedQuestions.current = false;
 
     generateQuestions();
   };
@@ -571,8 +574,6 @@ const Interview = ({ interviewData = {} }) => {
                     className="bg-[#10151e] border border-gray-800 rounded-2xl p-6"
                   >
 
-                    {/* QUESTION NUMBER */}
-
                     <div className="flex justify-between gap-4 mb-4">
                       <h3 className="font-semibold text-white">
                         Question{" "}
@@ -585,13 +586,9 @@ const Interview = ({ interviewData = {} }) => {
                       </span>
                     </div>
 
-                    {/* QUESTION */}
-
                     <p className="text-gray-200 mb-4">
                       {item?.question}
                     </p>
-
-                    {/* YOUR ANSWER */}
 
                     <div className="bg-[#171d27] rounded-lg p-4 mb-4">
                       <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">
@@ -604,8 +601,6 @@ const Interview = ({ interviewData = {} }) => {
                       </p>
                     </div>
 
-                    {/* STATUS */}
-
                     <p className="text-gray-300 mb-4">
                       <span className="font-semibold text-white">
                         Status:
@@ -616,13 +611,9 @@ const Interview = ({ interviewData = {} }) => {
                       </span>
                     </p>
 
-                    {/* FEEDBACK */}
-
                     <p className="text-gray-400 mb-4 leading-7">
                       {item?.feedback}
                     </p>
-
-                    {/* BETTER ANSWER */}
 
                     {item?.betterAnswer && (
                       <div className="bg-emerald-300/5 border border-emerald-300/20 rounded-lg p-4">
@@ -708,14 +699,12 @@ const Interview = ({ interviewData = {} }) => {
     questions[currentQuestion];
 
   const questionText =
-    typeof currentQuestionData ===
-    "object"
+    typeof currentQuestionData === "object"
       ? currentQuestionData?.question
       : currentQuestionData;
 
   const category =
-    typeof currentQuestionData ===
-    "object"
+    typeof currentQuestionData === "object"
       ? currentQuestionData?.category
       : "General";
 
