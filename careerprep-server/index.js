@@ -10,22 +10,57 @@ const app = express();
 // ======================================================
 // CORS
 // ======================================================
-app.use(
-  cors({
-    origin: true,
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://careerprep-ai-app.vercel.app",
+  "https://careerprep-ai-qq0vwho53-nihala-ms-projects.vercel.app",
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests without an origin
+    // Example: Postman, server-to-server requests
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log("Blocked CORS origin:", origin);
+    return callback(null, false);
+  },
+
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+  ],
+
+  credentials: false,
+
+  optionsSuccessStatus: 204,
+};
+
+// Apply CORS
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight requests
+app.options("*", cors(corsOptions));
 
 // ======================================================
-// Middleware
+// Body parser
 // ======================================================
+
 app.use(express.json());
 
 // ======================================================
-// Root Route
+// Root route
 // ======================================================
+
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -34,8 +69,9 @@ app.get("/", (req, res) => {
 });
 
 // ======================================================
-// Health Check
+// Health check
 // ======================================================
+
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -44,13 +80,15 @@ app.get("/api/health", (req, res) => {
 });
 
 // ======================================================
-// AI Routes
+// AI routes
 // ======================================================
+
 app.use("/api/ai", aiRoutes);
 
 // ======================================================
-// 404 Handler
+// 404 handler
 // ======================================================
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -59,8 +97,9 @@ app.use((req, res) => {
 });
 
 // ======================================================
-// Error Handler
+// Error handler
 // ======================================================
+
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
 
@@ -71,8 +110,9 @@ app.use((err, req, res, next) => {
 });
 
 // ======================================================
-// Local Development Server
+// Local development
 // ======================================================
+
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
 
@@ -84,4 +124,5 @@ if (process.env.NODE_ENV !== "production") {
 // ======================================================
 // Vercel
 // ======================================================
+
 export default app;
