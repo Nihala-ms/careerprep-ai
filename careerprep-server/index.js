@@ -18,8 +18,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin
-    // Example: Postman
+    // Allow Postman, server-to-server requests, etc.
     if (!origin) {
       return callback(null, true);
     }
@@ -30,7 +29,7 @@ const corsOptions = {
 
     console.log("Blocked CORS origin:", origin);
 
-    return callback(new Error("Not allowed by CORS"));
+    return callback(null, false);
   },
 
   methods: [
@@ -52,14 +51,7 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// ======================================================
-// CORS MIDDLEWARE
-// ======================================================
-
 app.use(cors(corsOptions));
-
-// Explicit OPTIONS handling
-app.options("*", cors(corsOptions));
 
 // ======================================================
 // BODY PARSER
@@ -111,8 +103,7 @@ app.use((err, req, res, next) => {
 
   res.status(500).json({
     success: false,
-    message:
-      err.message || "Internal server error",
+    message: err.message || "Internal server error",
   });
 });
 
@@ -131,7 +122,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ======================================================
-// EXPORT
+// VERCEL EXPORT
 // ======================================================
 
 export default app;
